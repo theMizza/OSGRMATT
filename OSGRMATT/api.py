@@ -66,7 +66,7 @@ class APIBase:
 
     def _send_file(self, url: str, file_name: str, return_error: bool = False):
         """Send file impl"""
-        file = Path(f'{self.base_dir}/utils/test_data/{file_name}')
+        file = Path(f'{self.base_dir}/test_data/{file_name}')
         self._headers['X-File-Size-From'] = '0'
         self._headers['X-File-Size'] = str(file.stat().st_size)
         with open(file, 'rb') as send_file:
