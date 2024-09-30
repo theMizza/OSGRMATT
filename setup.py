@@ -8,7 +8,7 @@ def readme():
 
 setup(
     name='OSGRMATT',
-    version='0.1.7',
+    version='0.1.8',
     author='theMizza',
     author_email='dirtymeff@yandex.ru',
     description='Simple framework to fast build selenium (with remote selenium grid as option) and api tests.',

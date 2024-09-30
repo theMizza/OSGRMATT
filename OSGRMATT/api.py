@@ -22,11 +22,14 @@ class APIBase:
     def base_dir(self):
         return self._BASE_DIR
 
-    def _post(self, url: str, body, return_error: bool = False):
+    def _post(self, url: str, body, return_error: bool = False, return_file: bool = False):
         """POST request impl"""
         response = requests.post(url, data=body, headers=self.headers)
         if response.status_code == 200:
-            return json.loads(response.content)
+            if return_file is True:
+                return response.content
+            else:
+                return json.loads(response.content)
         else:
             if return_error is True:
                 error = self._handle_error(response)
@@ -36,11 +39,14 @@ class APIBase:
                 logger.error("Url: %s POST Error %s: %s", url, response.status_code, response.content)
                 raise ValueError(f'{url} - {response.status_code}: {response.content}')
 
-    def _get(self, url: str, return_error: bool = False):
+    def _get(self, url: str, return_error: bool = False, return_file: bool = False):
         """GET request impl"""
         response = requests.get(url, headers=self.headers)
         if response.status_code == 200:
-            return json.loads(response.content)
+            if return_file is True:
+                return response.content
+            else:
+                return json.loads(response.content)
         else:
             if return_error is True:
                 error = self._handle_error(response)
@@ -48,6 +54,19 @@ class APIBase:
                 return f'{url} - {response.status_code}: {error}'
             else:
                 logger.error("Url: %s GET Error %s: %s", url, response.status_code, response.content)
+                raise ValueError(f'{url} - {response.status_code}: {response.content}')
+
+    def _delete(self, url: str, return_error: bool = False):
+        response = requests.delete(url=url, headers=self.headers)
+        if response.status_code == 200:
+            return json.loads(response.content)
+        else:
+            if return_error is True:
+                error = self._handle_error(response)
+                logger.error("Url: %s DELETE Error %s: %s", url, response.status_code, error)
+                return f'{url} - {response.status_code}: {error}'
+            else:
+                logger.error("Url: %s DELETE Error %s: %s", url, response.status_code, response.content)
                 raise ValueError(f'{url} - {response.status_code}: {response.content}')
 
     def _put(self, url: str, body: json, return_error: bool = False):

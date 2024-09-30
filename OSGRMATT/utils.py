@@ -3,6 +3,8 @@ import logging
 from time import sleep
 import sys
 from datetime import datetime
+import hashlib
+from typing import Union
 
 
 logger = logging.getLogger(__name__)
@@ -100,3 +102,14 @@ def get_timediff(start_time: datetime, end_time: datetime):
 def get_used_memory(driver):
     """Смотрим в консоли, сколько памяти загрузил в себя js"""
     return driver.execute_script("""var mem = window.performance.memory.usedJSHeapSize /  1048576; return mem;""")
+
+
+def to_hash(data: str, algorithm: Union[str, bytes]):
+    """Вычисление хэша данных с указанием алгоритма при помощи библиотеки hashlib."""
+    try:
+        hash_generator = getattr(hashlib, algorithm)()
+    except AttributeError:
+        raise AttributeError("Not supported algorithm. Supported only: sha1, sha256, sha512")
+
+    hash_generator.update(data.encode())
+    return hash_generator.hexdigest()
