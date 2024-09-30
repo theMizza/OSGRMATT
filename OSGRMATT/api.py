@@ -56,8 +56,8 @@ class APIBase:
                 logger.error("Url: %s GET Error %s: %s", url, response.status_code, response.content)
                 raise ValueError(f'{url} - {response.status_code}: {response.content}')
 
-    def _delete(self, url: str, return_error: bool = False):
-        response = requests.delete(url=url, headers=self.headers)
+    def _delete(self, url: str, data: json = None, return_error: bool = False):
+        response = requests.delete(url=url, data=data, headers=self.headers)
         if response.status_code == 200:
             return json.loads(response.content)
         else:
