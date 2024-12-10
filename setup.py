@@ -8,7 +8,7 @@ def readme():
 
 setup(
     name='OSGRMATT',
-    version='0.2.1',
+    version='0.2.2',
     author='theMizza',
     author_email='dirtymeff@yandex.ru',
     description='Simple framework to fast build selenium (with remote selenium grid as option) and api tests.',
@@ -17,6 +17,8 @@ setup(
     packages=find_packages(),
     install_requires=[
         'Faker==20.0.3',
+        'exchangelib==5.4.3',
+        'allure-pytest==2.13.5',
         'opencv-python==4.9.0.80',
         'pyodbc==5.0.1',
         'pyTelegramBotAPI==4.14.1',

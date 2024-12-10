@@ -6,8 +6,6 @@ from selenium.common import SessionNotCreatedException
 from selenium.webdriver.chrome.options import Options as Chromeoptions
 from selenium.webdriver.firefox.options import Options as FireFoxOptions
 from selenium.webdriver.remote.file_detector import FileDetector
-from selenium.webdriver.chrome.service import Service
-from webdriver_manager.chrome import ChromeDriverManager, ChromeType
 from time import sleep
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
@@ -108,8 +106,7 @@ class Browser:
             if browser == "FireFox":
                 return webdriver.Firefox(options=options)
             else:
-                service = Service(ChromeDriverManager(chrome_type=ChromeType.GOOGLE).install())
-                driver = webdriver.Chrome(service=service, options=options)
+                driver = webdriver.Chrome(options=options)
 
         return driver
 
