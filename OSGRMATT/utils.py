@@ -17,20 +17,22 @@ def process_browser_log_entry(entry):
 
 
 def check_requests(driver):
+    # TODO: add FireFox
     """
     Функция смотрит в DevTools Chrome в раздел Network.
     Если у запроса ответ не 200 или 204, кладет в лог урл и статус
     """
-    statuses = [200, 204, 304]
-    for performance_data in driver.get_log('performance'):
-        requests_json = process_browser_log_entry(performance_data)
-        if requests_json["method"] == "Network.responseReceived":
-            if requests_json["params"]["response"]["status"] in statuses:
-                pass
-            else:
-                logger.error("Request Url: %s, status - %s",
-                             requests_json["params"]["response"]["url"],
-                             requests_json["params"]["response"]["status"])
+    if driver.capabilities["browserName"] == "chrome":
+        statuses = [200, 204, 304]
+        for performance_data in driver.get_log('performance'):
+            requests_json = process_browser_log_entry(performance_data)
+            if requests_json["method"] == "Network.responseReceived":
+                if requests_json["params"]["response"]["status"] in statuses:
+                    pass
+                else:
+                    logger.error("Request Url: %s, status - %s",
+                                 requests_json["params"]["response"]["url"],
+                                 requests_json["params"]["response"]["status"])
 
 
 def notifies_needed():
@@ -54,37 +56,39 @@ def screencast_needed():
 
 
 def get_response_data(driver, url: str, wait: int = None):
+    # TODO: add FireFox
     """Функция для логгирования ответа от эндпойнта, url которого передаем аргументом"""
-    logger.info("Try to get response data for endpoint %s", url)
-    if wait:
-        sleep(wait)
-    browser_log = driver.get_log('performance')
-    events = [process_browser_log_entry(entry) for entry in browser_log]
-    events = [event for event in events if 'Network.response' in event['method']]
-    tmp_event_list = []
-    event_list = []
-    for event in events:
-        try:
-            event_type = event['params']['type']
-        except Exception:
-            event_type = 'None'
-        if event_type == 'XHR':
-            tmp_event_list.append(event)
-    for event in tmp_event_list:
-        try:
-            event_url = event['params']['response']['url']
-        except Exception:
-            event_url = "None"
-        if url == event_url:
-            event_list.append(event)
+    if driver.capabilities["browserName"] == "chrome":
+        logger.info("Try to get response data for endpoint %s", url)
+        if wait:
+            sleep(wait)
+        browser_log = driver.get_log('performance')
+        events = [process_browser_log_entry(entry) for entry in browser_log]
+        events = [event for event in events if 'Network.response' in event['method']]
+        tmp_event_list = []
+        event_list = []
+        for event in events:
+            try:
+                event_type = event['params']['type']
+            except Exception:
+                event_type = 'None'
+            if event_type == 'XHR':
+                tmp_event_list.append(event)
+        for event in tmp_event_list:
+            try:
+                event_url = event['params']['response']['url']
+            except Exception:
+                event_url = "None"
+            if url == event_url:
+                event_list.append(event)
 
-    if len(event_list) > 0:
-        for i in range(len(event_list)):
-            response = driver.execute_cdp_cmd('Network.getResponseBody',
-                                              {'requestId': event_list[i]["params"]["requestId"]})
-            logger.info("Endpoint's %s response: %s", url, response['body'])
-    else:
-        logger.error("Responses list is empty")
+        if len(event_list) > 0:
+            for i in range(len(event_list)):
+                response = driver.execute_cdp_cmd('Network.getResponseBody',
+                                                  {'requestId': event_list[i]["params"]["requestId"]})
+                logger.info("Endpoint's %s response: %s", url, response['body'])
+        else:
+            logger.error("Responses list is empty")
 
 
 def get_datetime():
@@ -100,8 +104,12 @@ def get_timediff(start_time: datetime, end_time: datetime):
 
 
 def get_used_memory(driver):
+    # TODO: add FireFox
     """Смотрим в консоли, сколько памяти загрузил в себя js"""
-    return driver.execute_script("""var mem = window.performance.memory.usedJSHeapSize /  1048576; return mem;""")
+    if driver.capabilities["browserName"] == "chrome":
+        return driver.execute_script("""var mem = window.performance.memory.usedJSHeapSize /  1048576; return mem;""")
+    else:
+        return None
 
 
 def to_hash(data: str, algorithm: Union[str, bytes]):
