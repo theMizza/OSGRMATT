@@ -8,7 +8,7 @@ def readme():
 
 setup(
     name='OSGRMATT',
-    version='0.2',
+    version='0.2.1',
     author='theMizza',
     author_email='dirtymeff@yandex.ru',
     description='Simple framework to fast build selenium (with remote selenium grid as option) and api tests.',
@@ -27,7 +27,6 @@ setup(
         'webdriver-manager==4.0.1',
         'SQLAlchemy==2.0.23',
         'exchangelib~=5.4.1',
-        'pandas==2.2.2',
         'numpy~=1.24.4',
         'beautifulsoup4==4.12.3',
         'bs4==0.0.2',
