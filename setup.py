@@ -45,5 +45,5 @@ setup(
     project_urls={
         'GitHub': 'https://github.com/theMizza/OSGRMATT'
     },
-    python_requires='>=3.8<3.12'
+    python_requires='>=3.8'
 )
