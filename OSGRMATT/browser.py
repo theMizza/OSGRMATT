@@ -130,50 +130,58 @@ class SeleniumLogic:
     def click_element_custom(self, by, value, timeout: int):
         WebDriverWait(self.driver, timeout).until(EC.element_to_be_clickable((by, value))).click()
 
-    def enter_text(self, by, value, text):
+    def enter_text(self, by, value, text, clear: bool = True):
         element = WebDriverWait(self.driver, 30).until(EC.visibility_of_element_located((by, value)))
-        element.clear()
+        if clear is True:
+            element.clear()
         element.send_keys(text)
 
-    def enter_text_fast(self, by, value, text):
+    def enter_text_fast(self, by, value, text, clear: bool = True):
         element = WebDriverWait(self.driver, 3).until(EC.visibility_of_element_located((by, value)))
-        element.clear()
+        if clear is True:
+            element.clear()
         element.send_keys(text)
 
-    def enter_text_fast_slow(self, by, value, text):
+    def enter_text_slow(self, by, value, text, clear: bool = True):
         element = WebDriverWait(self.driver, 180).until(EC.visibility_of_element_located((by, value)))
-        element.clear()
+        if clear is True:
+            element.clear()
         element.send_keys(text)
 
-    def enter_text_fast_custom(self, by, value, text, timeout: int):
+    def enter_text_custom(self, by, value, text, timeout: int, clear: bool = True):
         element = WebDriverWait(self.driver, timeout).until(EC.visibility_of_element_located((by, value)))
-        element.clear()
+        if clear is True:
+            element.clear()
         element.send_keys(text)
 
-    def enter_text_by_letter(self, by, value, text):
+    def enter_text_by_letter(self, by, value, text, clear: bool = True):
         element = WebDriverWait(self.driver, 30).until(EC.visibility_of_element_located((by, value)))
-        element.clear()
+        if clear is True:
+            element.clear()
         for i in text:
             element.send_keys(i)
             sleep(0.25)
 
-    def enter_text_by_letter_fast(self, by, value, text):
+    def enter_text_by_letter_fast(self, by, value, text, clear: bool = True):
         element = WebDriverWait(self.driver, 3).until(EC.visibility_of_element_located((by, value)))
-        element.clear()
+        if clear is True:
+            element.clear()
         for i in text:
             element.send_keys(i)
             sleep(0.25)
 
-    def enter_text_by_letter_slow(self, by, value, text):
+    def enter_text_by_letter_slow(self, by, value, text, clear: bool = True):
         element = WebDriverWait(self.driver, 180).until(EC.visibility_of_element_located((by, value)))
-        element.clear()
+        if clear is True:
+            element.clear()
         for i in text:
             element.send_keys(i)
             sleep(0.25)
 
-    def enter_text_by_letter_custom(self, by, value, text, timeout: int):
+    def enter_text_by_letter_custom(self, by, value, text, timeout: int, clear: bool = True):
         element = WebDriverWait(self.driver, timeout).until(EC.visibility_of_element_located((by, value)))
-        element.clear()
+        if clear is True:
+            element.clear()
         for i in text:
             element.send_keys(i)
             sleep(0.25)
@@ -371,6 +379,17 @@ class SeleniumLogic:
         second_string = self._from_list_of_dicts_to_str(list_b)
 
         return first_string == second_string
+
+    def download_file_remote(self, downloadable_file: str, download_path: str):
+        WebDriverWait(self.driver, 30).until(lambda d: downloadable_file in d.get_downloadable_files())
+        files = self.driver.get_downloadable_files()
+        logger.info("Files in Selenium Grid: %s", files)
+        logger.info("Try to download file from Selenium Grid: %s", downloadable_file)
+        try:
+            self.driver.download_file(downloadable_file, download_path)
+        except EOFError:
+            logger.warning("Try to download pdf/zip file issue: https://github.com/SeleniumHQ/selenium/issues/13956")
+        self.driver.delete_downloadable_files()
 
     def tear_down(self):
         self.driver.quit()
