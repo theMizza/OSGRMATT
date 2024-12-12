@@ -10,13 +10,13 @@ logger = logging.getLogger(__name__)
 
 
 class Recorder:
-    def __init__(self, driver, wait_time: float):
+    def __init__(self, driver, wait_time: float, base_dir: Path):
         self._driver = driver
         self._wait_time = wait_time  # time between frames
         self._video_th = None
         self._video_process = False
         self.video_file: Optional[Path] = None
-        self.BASE_DIR = Path(__file__).parent.parent.parent.parent.parent.resolve()
+        self.BASE_DIR = base_dir
 
     def start_video_rec(self, filename):
         logger.info("Start screencast record")
