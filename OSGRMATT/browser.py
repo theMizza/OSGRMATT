@@ -75,15 +75,16 @@ class Browser:
                      options: Union['Chromeoptions', 'FireFoxOptions'] = None,
                      command_executor: str = None,
                      browser: str = "Chrome"):
-        logger.info("Setup driver")
         if options is None:
             if browser == "FireFox":
                 options = FireFoxOptions()
             else:
                 options = Chromeoptions()
         if command_executor:
+            logger.info("Setup Selenium Grid driver")
             options.add_argument('--headless')
-            options.add_argument('-lang=ru')
+            options.add_argument('--lang=ru')
+            options.enable_downloads = True
             """
             Опция ниже не тестировалась. Подробнее об опции:
             https://www.selenium.dev/documentation/webdriver/drivers/remote_webdriver/#enable-downloads-in-the-grid
