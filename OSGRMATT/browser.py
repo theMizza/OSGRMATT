@@ -83,7 +83,6 @@ class Browser:
         if command_executor:
             logger.info("Setup Selenium Grid driver")
             options.add_argument('--headless')
-            options.add_argument('--lang=ru')
             options.enable_downloads = True
             """
             Опция ниже не тестировалась. Подробнее об опции:
