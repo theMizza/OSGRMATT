@@ -2,6 +2,7 @@ import json
 from functools import wraps
 from time import sleep
 import logging
+from selenium.webdriver import ActionChains, Keys
 
 logger = logging.getLogger(__name__)
 
@@ -27,18 +28,21 @@ def work_in_new_tab(func):
 
 
 def fix_used_memory(func):
+    # TODO: add FireFox
     """usedJSHeapSize to log"""
     @wraps(func)
     def fix_memory(*args, **kwargs):
-        before_usage = args[0].driver.execute_script("""var mem = window.performance.memory.usedJSHeapSize / 
-        1048576; return mem;""")
-        logger.info("Before method %s runs memory usage: %s Mb", func.__name__, before_usage)
+        if args[0].driver.capabilities["browserName"] == "chrome":
+            before_usage = args[0].driver.execute_script("""var mem = window.performance.memory.usedJSHeapSize / 
+            1048576; return mem;""")
+            logger.info("Before method %s runs memory usage: %s Mb", func.__name__, before_usage)
 
         res = func(*args, **kwargs)
 
-        after_usage = args[0].driver.execute_script("""var mem = window.performance.memory.usedJSHeapSize / 
-        1048576; return mem;""")
-        logger.info("After method %s runs memory usage: %s Mb", func.__name__, after_usage)
+        if args[0].driver.capabilities["browserName"] == "chrome":
+            after_usage = args[0].driver.execute_script("""var mem = window.performance.memory.usedJSHeapSize / 
+            1048576; return mem;""")
+            logger.info("After method %s runs memory usage: %s Mb", func.__name__, after_usage)
 
         return res
 
@@ -46,17 +50,19 @@ def fix_used_memory(func):
 
 
 def check_socket_data(func):
+    # TODO: add FireFox
     """Get socket data from Network DevTools tab"""
     @wraps(func)
     def check_socket(*args, **kwargs):
         res = func(*args, **kwargs)
-        for websocket_data in args[0].driver.get_log('performance'):
-            ws_json = json.loads((websocket_data['message']))
-            if ws_json["message"]["method"] == "Network.webSocketFrameReceived":
-                logger.info("Received socket message: %s", str(ws_json["message"]["params"]["timestamp"]) +
-                            ws_json["message"]["params"]["response"]["payloadData"])
-            if ws_json["message"]["method"] == "Network.webSocketFrameSent":
-                logger.info("Sent socket message: %s", ws_json["message"]["params"]["response"]["payloadData"])
+        if args[0].driver.capabilities["browserName"] == "chrome":
+            for websocket_data in args[0].driver.get_log('performance'):
+                ws_json = json.loads((websocket_data['message']))
+                if ws_json["message"]["method"] == "Network.webSocketFrameReceived":
+                    logger.info("Received socket message: %s", str(ws_json["message"]["params"]["timestamp"]) +
+                                ws_json["message"]["params"]["response"]["payloadData"])
+                if ws_json["message"]["method"] == "Network.webSocketFrameSent":
+                    logger.info("Sent socket message: %s", ws_json["message"]["params"]["response"]["payloadData"])
 
         return res
 
@@ -80,3 +86,13 @@ def upload_headers(func):
 
         return res
     return work_with_headers
+
+
+def close_hint(func):
+    @wraps(func)
+    def closer(*args, **kwargs):
+        res = func(*args, **kwargs)
+        ActionChains(args[0].driver).send_keys(Keys.ESCAPE).perform()
+        return res
+
+    return closer

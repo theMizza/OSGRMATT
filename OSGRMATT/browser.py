@@ -1,11 +1,11 @@
 import shutil
+from typing import Union
 from pathlib import Path
 from selenium import webdriver
 from selenium.common import SessionNotCreatedException
 from selenium.webdriver.chrome.options import Options as Chromeoptions
+from selenium.webdriver.firefox.options import Options as FireFoxOptions
 from selenium.webdriver.remote.file_detector import FileDetector
-from selenium.webdriver.chrome.service import Service
-from webdriver_manager.chrome import ChromeDriverManager, ChromeType
 from time import sleep
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
@@ -47,15 +47,23 @@ class Browser:
     def setup_options(self,
                       arguments: list = None,
                       experimental_options: list = None,
-                      capabilities: list = None):
-        options = Chromeoptions()
+                      capabilities: list = None,
+                      browser: str = "Chrome"):
+        if browser == "FireFox":
+            options = FireFoxOptions()
+            if experimental_options:
+                for key, value in experimental_options[0]['prefs'].items():
+                    options.set_preference(key, value)
+        else:
+            options = Chromeoptions()
+            if experimental_options:
+                for option in experimental_options:
+                    for key, value in option.items():
+                        options.add_experimental_option(key, value)
         if arguments:
             for argument in arguments:
                 options.add_argument(argument)
-        if experimental_options:
-            for option in experimental_options:
-                for key, value in option.items():
-                    options.add_experimental_option(key, value)
+
         if capabilities:
             for capability in capabilities:
                 for key, value in capability.items():
@@ -63,13 +71,19 @@ class Browser:
 
         return options
 
-    def setup_driver(self, options: Chromeoptions = None, command_executor: str = None):
-        logger.info("Setup driver")
+    def setup_driver(self,
+                     options: Union['Chromeoptions', 'FireFoxOptions'] = None,
+                     command_executor: str = None,
+                     browser: str = "Chrome"):
         if options is None:
-            options = Chromeoptions()
+            if browser == "FireFox":
+                options = FireFoxOptions()
+            else:
+                options = Chromeoptions()
         if command_executor:
+            logger.info("Setup Selenium Grid driver")
             options.add_argument('--headless')
-            options.add_argument('-lang=ru')
+            options.enable_downloads = True
             """
             Опция ниже не тестировалась. Подробнее об опции:
             https://www.selenium.dev/documentation/webdriver/drivers/remote_webdriver/#enable-downloads-in-the-grid
@@ -88,8 +102,11 @@ class Browser:
                 logger.error("Create session error stacktrace: %s", e.stacktrace)
                 raise TypeError("Driver creation error: %s", e.msg)
         else:
-            service = Service(ChromeDriverManager(chrome_type=ChromeType.GOOGLE).install())
-            driver = webdriver.Chrome(service=service, options=options)
+            logger.info("Setup driver %s", browser)
+            if browser == "FireFox":
+                return webdriver.Firefox(options=options)
+            else:
+                driver = webdriver.Chrome(options=options)
 
         return driver
 
@@ -104,14 +121,64 @@ class SeleniumLogic:
     def click_element_fast(self, by, value):
         WebDriverWait(self.driver, 3).until(EC.element_to_be_clickable((by, value))).click()
 
-    def enter_text(self, by, value, text):
+    def click_element_slow(self, by, value):
+        WebDriverWait(self.driver, 180).until(EC.element_to_be_clickable((by, value))).click()
+
+    def click_element_custom(self, by, value, timeout: int):
+        WebDriverWait(self.driver, timeout).until(EC.element_to_be_clickable((by, value))).click()
+
+    def enter_text(self, by, value, text, clear: bool = True):
         element = WebDriverWait(self.driver, 30).until(EC.visibility_of_element_located((by, value)))
-        element.clear()
+        if clear is True:
+            element.clear()
         element.send_keys(text)
 
-    def enter_text_by_letter(self, by, value, text):
+    def enter_text_fast(self, by, value, text, clear: bool = True):
+        element = WebDriverWait(self.driver, 3).until(EC.visibility_of_element_located((by, value)))
+        if clear is True:
+            element.clear()
+        element.send_keys(text)
+
+    def enter_text_slow(self, by, value, text, clear: bool = True):
+        element = WebDriverWait(self.driver, 180).until(EC.visibility_of_element_located((by, value)))
+        if clear is True:
+            element.clear()
+        element.send_keys(text)
+
+    def enter_text_custom(self, by, value, text, timeout: int, clear: bool = True):
+        element = WebDriverWait(self.driver, timeout).until(EC.visibility_of_element_located((by, value)))
+        if clear is True:
+            element.clear()
+        element.send_keys(text)
+
+    def enter_text_by_letter(self, by, value, text, clear: bool = True):
         element = WebDriverWait(self.driver, 30).until(EC.visibility_of_element_located((by, value)))
-        element.clear()
+        if clear is True:
+            element.clear()
+        for i in text:
+            element.send_keys(i)
+            sleep(0.25)
+
+    def enter_text_by_letter_fast(self, by, value, text, clear: bool = True):
+        element = WebDriverWait(self.driver, 3).until(EC.visibility_of_element_located((by, value)))
+        if clear is True:
+            element.clear()
+        for i in text:
+            element.send_keys(i)
+            sleep(0.25)
+
+    def enter_text_by_letter_slow(self, by, value, text, clear: bool = True):
+        element = WebDriverWait(self.driver, 180).until(EC.visibility_of_element_located((by, value)))
+        if clear is True:
+            element.clear()
+        for i in text:
+            element.send_keys(i)
+            sleep(0.25)
+
+    def enter_text_by_letter_custom(self, by, value, text, timeout: int, clear: bool = True):
+        element = WebDriverWait(self.driver, timeout).until(EC.visibility_of_element_located((by, value)))
+        if clear is True:
+            element.clear()
         for i in text:
             element.send_keys(i)
             sleep(0.25)
@@ -121,8 +188,23 @@ class SeleniumLogic:
         element = WebDriverWait(self.driver, 30).until(EC.presence_of_element_located((by, value)))
         element.send_keys(text)
 
+    def enter_text_in_hidden_input_fast(self, by, value, text):
+        """Enter path for upload file"""
+        element = WebDriverWait(self.driver, 3).until(EC.presence_of_element_located((by, value)))
+        element.send_keys(text)
+
+    def enter_text_in_hidden_input_slow(self, by, value, text):
+        """Enter path for upload file"""
+        element = WebDriverWait(self.driver, 180).until(EC.presence_of_element_located((by, value)))
+        element.send_keys(text)
+
+    def enter_text_in_hidden_input_custom(self, by, value, text, timeout: int):
+        """Enter path for upload file"""
+        element = WebDriverWait(self.driver, timeout).until(EC.presence_of_element_located((by, value)))
+        element.send_keys(text)
+
     def find_element_fast(self, by, value):
-        return WebDriverWait(self.driver, 5).until(EC.presence_of_element_located((by, value)))
+        return WebDriverWait(self.driver, 3).until(EC.presence_of_element_located((by, value)))
 
     def find_element(self, by, value):
         return WebDriverWait(self.driver, 30).until(EC.presence_of_element_located((by, value)))
@@ -130,26 +212,68 @@ class SeleniumLogic:
     def find_element_slow(self, by, value):
         return WebDriverWait(self.driver, 180).until(EC.presence_of_element_located((by, value)))
 
+    def find_element_custom(self, by, value, timeout: int):
+        return WebDriverWait(self.driver, timeout).until(EC.presence_of_element_located((by, value)))
+
     def find_elements(self, by, value):
         """find all presence elements with same locator"""
         return WebDriverWait(self.driver, 30).until(EC.presence_of_all_elements_located((by, value)))
+
+    def find_elements_fast(self, by, value):
+        """find all presence elements with same locator"""
+        return WebDriverWait(self.driver, 3).until(EC.presence_of_all_elements_located((by, value)))
+
+    def find_elements_slow(self, by, value):
+        """find all presence elements with same locator"""
+        return WebDriverWait(self.driver, 180).until(EC.presence_of_all_elements_located((by, value)))
+
+    def find_elements_custom(self, by, value, timeout: int):
+        """find all presence elements with same locator"""
+        return WebDriverWait(self.driver, timeout).until(EC.presence_of_all_elements_located((by, value)))
 
     def find_visible_elements(self, by, value):
         """find all visible elements with same locator"""
         return WebDriverWait(self.driver, 30).until(EC.visibility_of_all_elements_located((by, value)))
 
+    def find_visible_elements_fast(self, by, value):
+        """find all visible elements with same locator"""
+        return WebDriverWait(self.driver, 3).until(EC.visibility_of_all_elements_located((by, value)))
+
+    def find_visible_elements_slow(self, by, value):
+        """find all visible elements with same locator"""
+        return WebDriverWait(self.driver, 180).until(EC.visibility_of_all_elements_located((by, value)))
+
+    def find_visible_elements_custom(self, by, value, timeout: int):
+        """find all visible elements with same locator"""
+        return WebDriverWait(self.driver, timeout).until(EC.visibility_of_all_elements_located((by, value)))
+
     def find_element_instantly(self, by, value):
         return self.driver.find_element(by, value)
+
+    def find_elements_instantly(self, by, value):
+        return self.driver.find_elements(by, value)
 
     def check_visible_element(self, by, value):
         return WebDriverWait(self.driver, 30).until(EC.visibility_of_element_located((by, value)))
 
     def check_visible_fast(self, by, value):
-        return WebDriverWait(self.driver, 1).until(EC.visibility_of_element_located((by, value)))
+        return WebDriverWait(self.driver, 3).until(EC.visibility_of_element_located((by, value)))
+
+    def check_visible_slow(self, by, value):
+        return WebDriverWait(self.driver, 180).until(EC.visibility_of_element_located((by, value)))
+
+    def check_visible_custom(self, by, value, timeout: int):
+        return WebDriverWait(self.driver, timeout).until(EC.visibility_of_element_located((by, value)))
 
     def wait_invisibility_of_element(self, by, value):
         try:
             WebDriverWait(self.driver, 30).until(EC.invisibility_of_element_located((by, value)))
+        except TimeoutException:
+            return 'need more TO'
+
+    def wait_invisibility_of_element_fast(self, by, value):
+        try:
+            WebDriverWait(self.driver, 3).until(EC.invisibility_of_element_located((by, value)))
         except TimeoutException:
             return 'need more TO'
 
@@ -159,11 +283,33 @@ class SeleniumLogic:
         except TimeoutException:
             return 'need more TO'
 
-    def send_keys_to_element(self, by, value, keys):
-        element = self.driver.find_element(by, value)
+    def wait_invisibility_of_element_custom(self, by, value, timeout: int):
+        try:
+            WebDriverWait(self.driver, timeout).until(EC.invisibility_of_element_located((by, value)))
+        except TimeoutException:
+            return 'need more TO'
+
+    def send_keys_to_element_instantly(self, by, value, keys):
+        element = self.find_elements_instantly(by, value)
         element.send_keys(keys)
 
-    def send_keys_and_press_enter(self, locator, keys):
+    def send_keys_to_element(self, by, value, keys):
+        element = self.find_element(by, value)
+        element.send_keys(keys)
+
+    def send_keys_to_element_fast(self, by, value, keys):
+        element = self.find_element_fast(by, value)
+        element.send_keys(keys)
+
+    def send_keys_to_element_slow(self, by, value, keys):
+        element = self.find_element_slow(by, value)
+        element.send_keys(keys)
+
+    def send_keys_to_element_custom(self, by, value, keys, timeout: int):
+        element = self.find_element_custom(by, value, timeout)
+        element.send_keys(keys)
+
+    def send_keys_and_press_enter_by_locator(self, locator, keys):
         element = self.find_element(*locator)
         element.send_keys(keys)
         element.send_keys(Keys.ENTER)
@@ -172,8 +318,16 @@ class SeleniumLogic:
         alert = self.find_element(by, value).text
         return alert
 
+    def get_alert_info_fast(self, by, value):
+        alert = self.find_element_fast(by, value).text
+        return alert
+
     def get_alert_info_slow(self, by, value):
         alert = self.find_element_slow(by, value).text
+        return alert
+
+    def get_alert_info_custom(self, by, value, timeout: int):
+        alert = self.find_element_custom(by, value, timeout).text
         return alert
 
     def press_escape(self):
@@ -182,6 +336,18 @@ class SeleniumLogic:
     def click_element_parametrized(self, contains_text: str):
         dialog_xpath = f"//*[contains(text(), '{contains_text}')]"
         self.click_element(By.XPATH, dialog_xpath)
+
+    def click_element_parametrized_fast(self, contains_text: str):
+        dialog_xpath = f"//*[contains(text(), '{contains_text}')]"
+        self.click_element_fast(By.XPATH, dialog_xpath)
+
+    def click_element_parametrized_slow(self, contains_text: str):
+        dialog_xpath = f"//*[contains(text(), '{contains_text}')]"
+        self.click_element_slow(By.XPATH, dialog_xpath)
+
+    def click_element_parametrized_custom(self, contains_text: str, timeout: int):
+        dialog_xpath = f"//*[contains(text(), '{contains_text}')]"
+        self.click_element_custom(By.XPATH, dialog_xpath, timeout)
 
     def get_cookies(self):
         return self.driver.get_cookies()
@@ -210,6 +376,17 @@ class SeleniumLogic:
         second_string = self._from_list_of_dicts_to_str(list_b)
 
         return first_string == second_string
+
+    def download_file_remote(self, downloadable_file: str, download_path: str):
+        WebDriverWait(self.driver, 30).until(lambda d: downloadable_file in d.get_downloadable_files())
+        files = self.driver.get_downloadable_files()
+        logger.info("Files in Selenium Grid: %s", files)
+        logger.info("Try to download file from Selenium Grid: %s", downloadable_file)
+        try:
+            self.driver.download_file(downloadable_file, download_path)
+        except EOFError:
+            logger.warning("Try to download pdf/zip file issue: https://github.com/SeleniumHQ/selenium/issues/13956")
+        self.driver.delete_downloadable_files()
 
     def tear_down(self):
         self.driver.quit()

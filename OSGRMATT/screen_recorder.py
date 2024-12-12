@@ -16,7 +16,7 @@ class Recorder:
         self._video_th = None
         self._video_process = False
         self.video_file: Optional[Path] = None
-        self.BASE_DIR = Path(__file__).parent.resolve()
+        self.BASE_DIR = Path(__file__).parent.parent.parent.parent.parent.resolve()
 
     def start_video_rec(self, filename):
         logger.info("Start screencast record")
